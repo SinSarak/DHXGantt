@@ -1,0 +1,123 @@
+﻿@{ 
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Index</title>
+    <link href="~/vendor/DHXGantt/dhtmlxgantt.css" rel="stylesheet" />
+    @*<link href="~/vendor/DHXGantt/skins/dhtmlxgantt_material.css" rel="stylesheet" />*@
+
+    <script src="~/vendor/DHXGantt/dhtmlxgantt.js"></script>
+
+    <style>
+        html, body {
+            height: 100%;
+            padding: 0px;
+            margin: 0px !important;
+            overflow: hidden;
+        }
+
+        .gantt_task_line.gantt_dependent_task {
+            background-color: #65c16f;
+            border: 1px solid #3c9445;
+        }
+
+        .gantt_task_line.gantt_dependent_task .gantt_task_progress {
+            background-color: #46ad51;
+        }
+
+    </style>
+
+</head>
+<body>
+    <div id="gantt_here" style='width:100%; height:100%;'></div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function (event) {
+
+            gantt.config.scales = [
+                { unit: "month", step: 1, format: "%M" },
+                { unit: "year", step: 1, format: "%Y" },
+                { unit: "day", format: "%d %M" }
+            ];
+            gantt.config.scale_height = 3 * 28;
+
+            gantt.config.order_branch = true;
+            gantt.config.order_branch_free = true;
+
+            gantt.plugins({
+                tooltip: true,
+                marker: true
+            });
+            gantt.attachEvent("onGanttReady", function () {
+                var tooltips = gantt.ext.tooltips;
+                tooltips.tooltip.setViewport(gantt.$task_data);
+            });
+
+            var dateToStr = gantt.date.date_to_str(gantt.config.task_date);
+            var today = new Date(2022, 5, 21);
+            gantt.addMarker({
+                start_date: today,  
+                css: "today",
+                text: "Today",
+                title: "Today: " + dateToStr(today)
+            });
+
+            var start = new Date(2022, 5, 15);
+            gantt.addMarker({
+                start_date: start,
+                css: "status_line",
+                text: "Start project",
+                title: "Start project: " + dateToStr(start)
+            });
+
+            gantt.config.scale_height = 50;
+            gantt.config.scales = [
+                { unit: "day", step: 1, format: "%j, %D" },
+                { unit: "month", step: 1, format: "%F, %Y" },
+            ];
+
+            // specifying the date format
+            gantt.config.date_format = "%Y-%m-%d %H:%i";
+            // initializing gantt
+            gantt.init("gantt_here");
+
+            // initiating data loading
+            gantt.load("/api/data");
+            // initializing dataProcessor
+            var dp = new gantt.dataProcessor("/api/");
+            // and attaching it to gantt
+            dp.init(gantt);
+            // setting the REST mode for dataProcessor
+            dp.setTransactionMode("REST");
+
+
+            gantt.attachEvent("onLinkClick", function (id) {
+                var link = this.getLink(id),
+                    src = this.getTask(link.source),
+                    trg = this.getTask(link.target),
+                    types = this.config.links;
+
+                var first = "", second = "";
+                switch (link.type) {
+                    case types.finish_to_start:
+                        first = "finish";
+                        second = "start";
+                        break;
+                    case types.start_to_start:
+                        first = "start";
+                        second = "start";
+                        break;
+                    case types.finish_to_finish:
+                        first = "finish";
+                        second = "finish";
+                        break;
+                }
+
+                gantt.message("Must " + first + " <b>" + src.text + "</b> to " + second + " <b>" + trg.text + "</b>");
+            });
+
+        });</script>
+</body>
+</html>
